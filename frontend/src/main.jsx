@@ -5,12 +5,14 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
+        <CurrencyProvider>
         <CartProvider>
           <App />
           <Toaster
@@ -25,6 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             }}
           />
         </CartProvider>
+        </CurrencyProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>

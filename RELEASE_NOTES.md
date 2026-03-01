@@ -60,6 +60,13 @@ First public release of the **Dynamic Product Catalogue System with Discount Eng
 - Toast notifications for user feedback
 - Mobile-friendly card layouts
 
+#### Multi-Currency Display
+- View prices in **INR (₹)**, **USD ($)**, or **EUR (€)**
+- Currency selector in navigation bar (desktop dropdown + mobile select)
+- Selection persists across page refresh via `localStorage`
+- All conversions are display-only — internal calculations remain in INR
+- Instant price update across catalogue, cart, checkout, and orders
+
 ---
 
 ### 🏗️ Architecture
@@ -89,7 +96,8 @@ Routes → Controllers → Pricing Engine → Database
 
 ### 📌 Assumptions
 
-- Currency: INR (₹)
+- All prices stored internally in **INR (₹)** — conversion is display-only
+- Conversion rates are **static** (INR→1, USD→0.012, EUR→0.011) — not from a live API
 - Coupons apply on cart total, not individual items
 - One discount per checkout
 - No payment gateway — orders placed directly
@@ -99,7 +107,7 @@ Routes → Controllers → Pricing Engine → Database
 
 ### ⚠️ Known Limitations
 
-- No multi-currency support
+- Currency conversion uses **static rates** — no live exchange rate API
 - No live inventory sync
 - No payment integration (Razorpay/Stripe)
 - No email notifications
@@ -121,6 +129,7 @@ feat: create pricing engine for discount calculation
 fix: block checkout for out-of-stock products
 feat: implement coupon validation at checkout
 feat: add admin analytics for purchase trends
+feat: implement multi-currency display system
 style: enhance UI with modern responsive design
 docs: add README with architecture explanation
 chore: prepare project for release v0.1.0

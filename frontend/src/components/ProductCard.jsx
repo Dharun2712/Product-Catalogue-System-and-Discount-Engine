@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { HiShoppingCart, HiEye } from 'react-icons/hi';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const { isAdmin } = useAuth();
+  const { formatPrice } = useCurrency();
   const hasDiscount = product.discountPrice != null && product.discountPrice < product.price;
   const discountPercent = hasDiscount
     ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
@@ -54,11 +56,11 @@ export default function ProductCard({ product }) {
         <div className="flex items-center justify-between mt-3">
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-bold text-gray-900">
-              ₹{hasDiscount ? product.discountPrice : product.price}
+              {formatPrice(hasDiscount ? product.discountPrice : product.price)}
             </span>
             {hasDiscount && (
               <span className="text-sm text-gray-400 line-through">
-                ₹{product.price}
+                {formatPrice(product.price)}
               </span>
             )}
           </div>

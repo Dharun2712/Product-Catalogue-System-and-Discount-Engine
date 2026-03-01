@@ -13,6 +13,7 @@ import {
 import API from '../api/axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 
@@ -24,6 +25,7 @@ export default function ProductPage() {
   const [currentImage, setCurrentImage] = useState(0);
   const { addToCart } = useCart();
   const { isAdmin, user } = useAuth();
+  const { formatPrice } = useCurrency();
 
   // Tabs
   const [activeTab, setActiveTab] = useState('description');
@@ -231,11 +233,11 @@ export default function ProductPage() {
 
           <div className="flex items-baseline gap-3 mb-6">
             <span className="text-3xl font-bold text-gray-900">
-              ₹{hasDiscount ? product.discountPrice : product.price}
+              {formatPrice(hasDiscount ? product.discountPrice : product.price)}
             </span>
             {hasDiscount && (
               <>
-                <span className="text-xl text-gray-400 line-through">₹{product.price}</span>
+                <span className="text-xl text-gray-400 line-through">{formatPrice(product.price)}</span>
                 <span className="text-sm bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">
                   {Math.round(((product.price - product.discountPrice) / product.price) * 100)}% off
                 </span>

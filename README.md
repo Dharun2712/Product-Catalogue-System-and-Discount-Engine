@@ -107,6 +107,7 @@ The **Dynamic Product Catalogue System with Discount Engine** is a complete e-co
 | **Product Details** | View detailed product pages with reviews and specifications |
 | **Shopping Cart** | Add/remove items, adjust quantities with real-time total |
 | **Apply Coupon** | Enter coupon codes at checkout for discounts |
+| **Multi-Currency** | View prices in INR, USD, or EUR with persistent selection |
 | **Checkout** | Complete purchase with server-verified pricing |
 | **Order History** | View past orders with details and status |
 | **Reviews** | Rate and review purchased products |
@@ -443,12 +444,13 @@ npm run seed
 
 | # | Assumption |
 |---|---|
-| 1 | Currency is assumed as **INR (₹)** throughout the system |
-| 2 | Coupons apply on the **cart total** (not individual items) |
-| 3 | Only **one discount/coupon** can be applied per checkout |
-| 4 | No **payment gateway** is integrated — orders are placed directly |
-| 5 | Product images are stored as file paths via Multer (not cloud storage) |
-| 6 | Admin accounts are seeded or manually created in the database |
+| 1 | All product prices are **stored internally in INR (₹)** — currency conversion is display-only |
+| 2 | Conversion rates are **static** (INR→1, USD→0.012, EUR→0.011) — not fetched from a live API |
+| 3 | Coupons apply on the **cart total** (not individual items) |
+| 4 | Only **one discount/coupon** can be applied per checkout |
+| 5 | No **payment gateway** is integrated — orders are placed directly |
+| 6 | Product images are stored as file paths via Multer (not cloud storage) |
+| 7 | Admin accounts are seeded or manually created in the database |
 
 ---
 
@@ -456,7 +458,7 @@ npm run seed
 
 | # | Limitation |
 |---|---|
-| 1 | No **multi-currency** support — INR only |
+| 1 | Currency conversion uses **static rates** — no live exchange rate API integration |
 | 2 | No **live inventory sync** — stock is decremented at checkout |
 | 3 | No **payment integration** (Razorpay, Stripe, etc.) |
 | 4 | No **email notifications** for order confirmation |
@@ -478,6 +480,7 @@ feat: create pricing engine for discount calculation
 fix: block checkout for out-of-stock products
 feat: implement coupon validation at checkout
 feat: add admin analytics for purchase trends
+feat: implement multi-currency display system
 style: enhance UI with modern responsive design
 docs: add README with architecture explanation
 chore: prepare project for release v0.1.0
@@ -499,6 +502,7 @@ chore: prepare project for release v0.1.0
 - ✅ **Admin Dashboard** — Product, coupon, order, customer, and review management with analytics
 - ✅ **JWT Authentication** — Secure role-based access control for Users and Admins
 - ✅ **Edge Case Handling** — Expired coupons, out-of-stock products, usage limits, discount caps
+- ✅ **Multi-Currency Display** — View prices in INR, USD, or EUR with persistent selection and instant updates
 - ✅ **Responsive UI** — Modern design with Tailwind CSS, works on desktop and mobile
 - ✅ **Product Reviews** — Star ratings and comments with one-review-per-user constraint
 

@@ -1,14 +1,27 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { HiShoppingCart, HiUser, HiLogout, HiCog, HiMenu, HiX } from 'react-icons/hi';
-import { useState } from 'react';
+import { useCurrency } from '../context/CurrencyContext';
+import { HiShoppingCart, HiUser, HiLogout, HiCog, HiMenu, HiX, HiGlobeAlt } from 'react-icons/hi';
+import { useState, useRef, useEffect } from 'react';
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
   const { totalItems } = useCart();
+  const { currency, setCurrency, currencies, symbols } = useCurrency();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  const currencyRef = useRef(null);
+
+  // Close currency dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (currencyRef.current && !currencyRef.current.contains(e.target)) setCurrencyOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -32,6 +45,40 @@ export default function Navbar() {
             <Link to="/" className="text-gray-600 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-gray-50">
               Home
             </Link>
+
+            {/* Currency Selector */}
+            <div className="relative" ref={currencyRef}>
+              <button
+                onClick={() => setCurrencyOpen(!currencyOpen)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 transition-all border border-gray-200 hover:border-primary-200"
+              >
+                <HiGlobeAlt className="w-4 h-4" />
+                <span className="font-semibold">{symbols[currency]}</span>
+                <span>{currency}</span>
+                <svg className={`w-3 h-3 ml-0.5 transition-transform ${currencyOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              {currencyOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 animate-in">
+                  {currencies.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => { setCurrency(c); setCurrencyOpen(false); }}
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
+                        c === currency
+                          ? 'bg-primary-50 text-primary-700 font-semibold'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="w-6 text-center font-bold text-base">{symbols[c]}</span>
+                      <span>{c}</span>
+                      {c === currency && (
+                        <svg className="w-4 h-4 ml-auto text-primary-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {user ? (
               <>
@@ -97,6 +144,19 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3 space-y-2">
           <Link to="/" className="block py-2 text-gray-700" onClick={() => setMobileOpen(false)}>Home</Link>
+          {/* Mobile Currency Selector */}
+          <div className="flex items-center gap-2 py-2">
+            <HiGlobeAlt className="w-4 h-4 text-gray-500" />
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              {currencies.map((c) => (
+                <option key={c} value={c}>{symbols[c]} {c}</option>
+              ))}
+            </select>
+          </div>
           {user ? (
             <>
               {!isAdmin && (

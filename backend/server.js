@@ -35,6 +35,22 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/reviews', require('./routes/reviews'));
 
+// Currency endpoint
+const { getSupportedCurrencies, convertPrice } = require('./services/currencyService');
+app.get('/api/currencies', (req, res) => {
+  res.json(getSupportedCurrencies());
+});
+app.get('/api/currencies/convert', (req, res) => {
+  const { amount, to } = req.query;
+  if (!amount || !to) return res.status(400).json({ message: 'amount and to are required' });
+  try {
+    const converted = convertPrice(Number(amount), to.toUpperCase());
+    res.json({ original: Number(amount), currency: to.toUpperCase(), converted });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

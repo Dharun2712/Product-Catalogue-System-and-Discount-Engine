@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useCurrency } from '../context/CurrencyContext';
 import API from '../api/axios';
 import toast from 'react-hot-toast';
 import {
@@ -19,6 +20,7 @@ import {
 
 export default function Checkout() {
   const { items, subtotal, clearCart } = useCart();
+  const { formatPrice, symbol } = useCurrency();
   const navigate = useNavigate();
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -42,7 +44,7 @@ export default function Checkout() {
       setAppliedCoupon(data.code);
       setDiscount(data.discount);
       setCouponCode(data.code);
-      toast.success(`Coupon applied! You save ₹${data.discount}`);
+      toast.success(`Coupon applied! You save ${formatPrice(data.discount)}`);
       setShowCoupons(false);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid coupon');
@@ -175,7 +177,7 @@ export default function Checkout() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug">{item.name}</p>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-xs text-gray-400">₹{item.price.toLocaleString('en-IN')}</span>
+                        <span className="text-xs text-gray-400">{formatPrice(item.price)}</span>
                         <span className="text-gray-200">×</span>
                         <span className="inline-flex items-center justify-center w-6 h-6 bg-primary-50 text-primary-700 text-xs font-bold rounded-md">
                           {item.quantity}
@@ -186,7 +188,7 @@ export default function Checkout() {
                     {/* Price */}
                     <div className="text-right flex-shrink-0">
                       <p className="text-base font-bold text-gray-900">
-                        ₹{(item.price * item.quantity).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        {formatPrice(item.price * item.quantity)}
                       </p>
                     </div>
                   </div>
@@ -222,7 +224,7 @@ export default function Checkout() {
                       <div>
                         <span className="font-bold text-emerald-800 text-sm tracking-wide">{appliedCoupon}</span>
                         <p className="text-xs text-emerald-600 mt-0.5">
-                          You save ₹{discount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          You save {formatPrice(discount)}
                         </p>
                       </div>
                     </div>
@@ -321,16 +323,16 @@ export default function Checkout() {
                                 </div>
                                 {coupon.eligible && (
                                   <span className="text-sm font-bold text-emerald-600 flex items-center gap-0.5">
-                                    Save ₹{coupon.discount}
+                                    Save {formatPrice(coupon.discount)}
                                   </span>
                                 )}
                               </div>
                               <p className="text-xs text-gray-500 ml-0.5">
                                 {coupon.type === 'percentage'
                                   ? `${coupon.value}% off`
-                                  : `Flat ₹${coupon.value} off`}
-                                {coupon.minOrderValue > 0 && ` on orders above ₹${coupon.minOrderValue}`}
-                                {coupon.maxDiscountCap && ` (max ₹${coupon.maxDiscountCap})`}
+                                  : `Flat ${formatPrice(coupon.value)} off`}
+                                {coupon.minOrderValue > 0 && ` on orders above ${formatPrice(coupon.minOrderValue)}`}
+                                {coupon.maxDiscountCap && ` (max ${formatPrice(coupon.maxDiscountCap)})`}
                               </p>
                               {!coupon.eligible && coupon.reasons.length > 0 && (
                                 <div className="flex items-center gap-1.5 mt-1.5 ml-0.5">
@@ -368,7 +370,7 @@ export default function Checkout() {
                       Subtotal ({items.length} {items.length === 1 ? 'item' : 'items'})
                     </span>
                     <span className="text-sm font-semibold text-gray-900">
-                      ₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      {formatPrice(subtotal)}
                     </span>
                   </div>
 
@@ -379,7 +381,7 @@ export default function Checkout() {
                         Coupon Discount
                       </span>
                       <span className="text-sm font-semibold text-emerald-600">
-                        -₹{discount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        -{formatPrice(discount)}
                       </span>
                     </div>
                   )}
@@ -401,7 +403,7 @@ export default function Checkout() {
                   <div className="flex justify-between items-center pt-1">
                     <span className="text-lg font-bold text-gray-900">Total</span>
                     <span className="text-xl font-bold text-gray-900 flex items-center">
-                      ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      {formatPrice(total)}
                     </span>
                   </div>
 
@@ -410,7 +412,7 @@ export default function Checkout() {
                     <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-100 rounded-xl px-4 py-3 text-center">
                       <p className="text-sm font-semibold text-emerald-700 flex items-center justify-center gap-1.5">
                         <HiSparkles className="w-4 h-4" />
-                        You're saving ₹{discount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} on this order!
+                        You're saving {formatPrice(discount)} on this order!
                       </p>
                     </div>
                   )}

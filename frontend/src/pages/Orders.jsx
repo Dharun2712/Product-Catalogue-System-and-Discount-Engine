@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api/axios';
+import { useCurrency } from '../context/CurrencyContext';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import {
   HiClock,
@@ -15,6 +16,7 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -146,12 +148,11 @@ export default function Orders() {
                   <div className="flex items-center gap-4 flex-shrink-0">
                     <div className="text-right">
                       <p className="text-xl font-bold text-gray-900 flex items-center justify-end gap-0.5">
-                        <HiCurrencyRupee className="w-5 h-5 text-gray-600" />
-                        {order.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        {formatPrice(order.total)}
                       </p>
                       {order.couponApplied && order.discount > 0 && (
                         <p className="text-xs text-emerald-600 font-medium mt-0.5">
-                          Saved ₹{order.discount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          Saved {formatPrice(order.discount)}
                         </p>
                       )}
                     </div>
@@ -198,12 +199,12 @@ export default function Orders() {
                                   {item.name}
                                 </p>
                                 <p className="text-xs text-gray-400">
-                                  ₹{item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })} each
+                                  {formatPrice(item.price)} each
                                 </p>
                               </div>
                             </div>
                             <span className="text-sm font-semibold text-gray-900 flex-shrink-0 ml-4">
-                              ₹{(item.price * item.quantity).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                              {formatPrice(item.price * item.quantity)}
                             </span>
                           </div>
                         ))}
@@ -213,7 +214,7 @@ export default function Orders() {
                       <div className="mt-4 pt-3 border-t border-dashed border-gray-200 space-y-1.5">
                         <div className="flex items-center justify-between text-sm text-gray-500">
                           <span>Subtotal</span>
-                          <span>₹{order.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          <span>{formatPrice(order.subtotal)}</span>
                         </div>
                         {order.couponApplied && order.discount > 0 && (
                           <div className="flex items-center justify-between text-sm text-emerald-600">
@@ -221,14 +222,13 @@ export default function Orders() {
                               <HiTicket className="w-3.5 h-3.5" />
                               Discount ({order.couponApplied})
                             </span>
-                            <span>-₹{order.discount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <span>-{formatPrice(order.discount)}</span>
                           </div>
                         )}
                         <div className="flex items-center justify-between text-base font-bold text-gray-900 pt-1.5">
                           <span>Total</span>
                           <span className="flex items-center gap-0.5">
-                            <HiCurrencyRupee className="w-4 h-4" />
-                            {order.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            {formatPrice(order.total)}
                           </span>
                         </div>
                       </div>

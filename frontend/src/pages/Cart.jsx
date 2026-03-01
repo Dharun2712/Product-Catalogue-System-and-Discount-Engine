@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { HiTrash, HiMinus, HiPlus, HiArrowRight } from 'react-icons/hi';
 
 export default function Cart() {
   const { items, removeFromCart, updateQuantity, subtotal } = useCart();
+  const { formatPrice } = useCurrency();
 
   if (items.length === 0) {
     return (
@@ -40,9 +42,9 @@ export default function Cart() {
                 {item.name}
               </Link>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="font-bold text-gray-900">₹{item.price}</span>
+                <span className="font-bold text-gray-900">{formatPrice(item.price)}</span>
                 {item.originalPrice > item.price && (
-                  <span className="text-sm text-gray-400 line-through">₹{item.originalPrice}</span>
+                  <span className="text-sm text-gray-400 line-through">{formatPrice(item.originalPrice)}</span>
                 )}
               </div>
             </div>
@@ -68,7 +70,7 @@ export default function Cart() {
 
             {/* Subtotal */}
             <div className="text-right w-24">
-              <p className="font-bold text-gray-900">₹{(item.price * item.quantity).toFixed(2)}</p>
+              <p className="font-bold text-gray-900">{formatPrice(item.price * item.quantity)}</p>
             </div>
 
             {/* Remove */}
@@ -86,7 +88,7 @@ export default function Cart() {
       <div className="card p-6">
         <div className="flex justify-between items-center mb-4">
           <span className="text-lg font-medium text-gray-700">Subtotal</span>
-          <span className="text-2xl font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
+          <span className="text-2xl font-bold text-gray-900">{formatPrice(subtotal)}</span>
         </div>
         <div className="flex gap-3">
           <Link to="/" className="btn-secondary flex-1 text-center">
