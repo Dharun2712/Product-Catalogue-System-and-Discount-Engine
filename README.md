@@ -1,10 +1,4 @@
 # 🛍️ Dynamic Product Catalogue System with Discount Engine
-<p align="center">
-  <img src="https://img.shields.io/badge/Release-v0.1.0-orange?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/Stack-React%20%7C%20Node%20%7C%20MongoDB-blueviolet?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/Auth-JWT-red?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/UI-TailwindCSS-38B2AC?style=for-the-badge"/>
-</p>
 
 A full-stack e-commerce platform that enables **product catalogue management**, **dynamic discount application**, **coupon validation**, **cart-based checkout**, and **admin analytics** — built as an internship project.
 
