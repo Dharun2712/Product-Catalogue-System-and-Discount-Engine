@@ -1,6 +1,12 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
+const {
+  roundMoney,
+  getCouponValidationResult,
+  calculateCouponDiscount,
+  calculateOrderTotal,
+} = require('../services/pricingService');
 
 // POST /api/orders
 exports.createOrder = async (req, res) => {
@@ -16,6 +22,11 @@ exports.createOrder = async (req, res) => {
     const orderItems = [];
 
     for (const item of items) {
+      const quantity = Number(item.quantity);
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        return res.status(400).json({ message: 'Item quantity must be a positive integer' });
+      }
+
       const product = await Product.findById(item.product);
       if (!product) {
         return res.status(404).json({ message: `Product ${item.product} not found` });
@@ -23,59 +34,53 @@ exports.createOrder = async (req, res) => {
       if (!product.active) {
         return res.status(400).json({ message: `${product.name} is not available` });
       }
-      if (product.stock < item.quantity) {
+      if (product.stock < quantity) {
         return res.status(400).json({ message: `Insufficient stock for ${product.name}` });
       }
 
       const price = product.discountPrice != null ? product.discountPrice : product.price;
-      subtotal += price * item.quantity;
+      if (!Number.isFinite(Number(price)) || Number(price) < 0) {
+        return res.status(400).json({ message: `Invalid price configured for ${product.name}` });
+      }
+
+      subtotal = roundMoney(subtotal + Number(price) * quantity);
 
       orderItems.push({
         product: product._id,
         name: product.name,
         price,
-        quantity: item.quantity,
+        quantity,
       });
     }
-
-    subtotal = Math.round(subtotal * 100) / 100;
 
     // Apply coupon if provided (server-side validation)
     let discount = 0;
     let couponApplied = null;
 
-    if (couponCode) {
-      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+    if (couponCode && couponCode.trim()) {
+      const coupon = await Coupon.findOne({ code: couponCode.trim().toUpperCase() });
 
-      if (!coupon) {
-        return res.status(400).json({ message: 'Invalid coupon code' });
-      }
-      if (!coupon.active) {
-        return res.status(400).json({ message: 'Coupon is inactive' });
-      }
-      if (new Date(coupon.expiry) < new Date()) {
-        return res.status(400).json({ message: 'Coupon has expired' });
-      }
-      if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
-        return res.status(400).json({ message: 'Coupon usage limit reached' });
-      }
-      if (subtotal < coupon.minOrderValue) {
+      const validation = getCouponValidationResult(coupon, subtotal);
+      if (!validation.valid) {
+        if (validation.reason === 'minimum_order_not_met') {
+          return res.status(400).json({
+            message: `Minimum order value of ₹${validation.minimumOrderValue} required for this coupon`,
+          });
+        }
+
+        const reasonToMessage = {
+          not_found: 'Invalid coupon code',
+          inactive: 'Coupon is inactive',
+          expired: 'Coupon has expired',
+          usage_limit_reached: 'Coupon usage limit reached',
+        };
+
         return res.status(400).json({
-          message: `Minimum order value of ₹${coupon.minOrderValue} required for this coupon`,
+          message: reasonToMessage[validation.reason] || 'Invalid coupon code',
         });
       }
 
-      if (coupon.type === 'percentage') {
-        discount = (coupon.value / 100) * subtotal;
-        if (coupon.maxDiscountCap && discount > coupon.maxDiscountCap) {
-          discount = coupon.maxDiscountCap;
-        }
-      } else {
-        discount = coupon.value;
-      }
-
-      if (discount > subtotal) discount = subtotal;
-      discount = Math.round(discount * 100) / 100;
+      discount = calculateCouponDiscount(coupon, subtotal);
       couponApplied = coupon.code;
 
       // Increment usage count
@@ -83,7 +88,7 @@ exports.createOrder = async (req, res) => {
       await coupon.save();
     }
 
-    const total = Math.round((subtotal - discount) * 100) / 100;
+    const total = calculateOrderTotal(subtotal, discount);
 
     const order = await Order.create({
       user: req.user._id,

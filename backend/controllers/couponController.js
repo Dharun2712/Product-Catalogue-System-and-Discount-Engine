@@ -1,4 +1,10 @@
 const Coupon = require('../models/Coupon');
+const {
+  assertValidSubtotal,
+  getCouponValidationResult,
+  calculateCouponDiscount,
+  calculateOrderTotal,
+} = require('../services/pricingService');
 
 // GET /api/coupons
 exports.getCoupons = async (req, res) => {
@@ -12,6 +18,9 @@ exports.getCoupons = async (req, res) => {
     }
     res.json(coupons);
   } catch (error) {
+    if (error.message === 'Subtotal must be a non-negative number') {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -94,51 +103,33 @@ exports.validateCoupon = async (req, res) => {
       return res.status(400).json({ message: 'Coupon code and subtotal are required' });
     }
 
-    const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+    const numericSubtotal = assertValidSubtotal(subtotal);
+    const coupon = await Coupon.findOne({ code: code.trim().toUpperCase() });
 
-    if (!coupon) {
-      return res.status(404).json({ message: 'Coupon not found' });
-    }
+    const validation = getCouponValidationResult(coupon, numericSubtotal);
+    if (!validation.valid) {
+      if (validation.reason === 'not_found') {
+        return res.status(404).json({ message: 'Coupon not found' });
+      }
 
-    // Check if active
-    if (!coupon.active) {
-      return res.status(400).json({ message: 'This coupon is inactive' });
-    }
+      if (validation.reason === 'minimum_order_not_met') {
+        return res.status(400).json({
+          message: `Minimum order value of ₹${validation.minimumOrderValue} required`,
+        });
+      }
 
-    // Check expiry
-    if (new Date(coupon.expiry) < new Date()) {
-      return res.status(400).json({ message: 'This coupon has expired' });
-    }
+      const reasonToMessage = {
+        inactive: 'This coupon is inactive',
+        expired: 'This coupon has expired',
+        usage_limit_reached: 'This coupon has reached its usage limit',
+      };
 
-    // Check usage limit
-    if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
-      return res.status(400).json({ message: 'This coupon has reached its usage limit' });
-    }
-
-    // Check minimum order value
-    if (subtotal < coupon.minOrderValue) {
       return res.status(400).json({
-        message: `Minimum order value of ₹${coupon.minOrderValue} required`,
+        message: reasonToMessage[validation.reason] || 'This coupon is invalid',
       });
     }
 
-    // Calculate discount
-    let discount = 0;
-    if (coupon.type === 'percentage') {
-      discount = (coupon.value / 100) * subtotal;
-      if (coupon.maxDiscountCap && discount > coupon.maxDiscountCap) {
-        discount = coupon.maxDiscountCap;
-      }
-    } else {
-      discount = coupon.value;
-    }
-
-    // Discount should not exceed subtotal
-    if (discount > subtotal) {
-      discount = subtotal;
-    }
-
-    discount = Math.round(discount * 100) / 100;
+    const discount = calculateCouponDiscount(coupon, numericSubtotal);
 
     res.json({
       valid: true,
@@ -146,9 +137,12 @@ exports.validateCoupon = async (req, res) => {
       type: coupon.type,
       value: coupon.value,
       discount,
-      total: Math.round((subtotal - discount) * 100) / 100,
+      total: calculateOrderTotal(numericSubtotal, discount),
     });
   } catch (error) {
+    if (error.message === 'Subtotal must be a non-negative number') {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -156,46 +150,25 @@ exports.validateCoupon = async (req, res) => {
 // GET /api/coupons/available?subtotal=xxx
 exports.getAvailableCoupons = async (req, res) => {
   try {
-    const subtotal = Number(req.query.subtotal) || 0;
+    const subtotal = assertValidSubtotal(Number(req.query.subtotal) || 0);
     const coupons = await Coupon.find().sort({ createdAt: -1 });
 
     const result = coupons.map((c) => {
       const reasons = [];
-      let eligible = true;
-
-      if (!c.active) {
-        eligible = false;
-        reasons.push('Coupon is inactive');
-      }
-
-      if (new Date(c.expiry) < new Date()) {
-        eligible = false;
-        reasons.push('Coupon has expired');
-      }
-
-      if (c.usageLimit && c.usedCount >= c.usageLimit) {
-        eligible = false;
-        reasons.push('Usage limit reached');
-      }
-
-      if (subtotal < c.minOrderValue) {
-        eligible = false;
-        reasons.push(`Minimum order ₹${c.minOrderValue} required`);
-      }
-
-      // Calculate potential discount
+      const validation = getCouponValidationResult(c, subtotal);
       let discount = 0;
-      if (eligible) {
-        if (c.type === 'percentage') {
-          discount = (c.value / 100) * subtotal;
-          if (c.maxDiscountCap && discount > c.maxDiscountCap) {
-            discount = c.maxDiscountCap;
-          }
-        } else {
-          discount = c.value;
-        }
-        if (discount > subtotal) discount = subtotal;
-        discount = Math.round(discount * 100) / 100;
+
+      if (!validation.valid) {
+        const reasonToMessage = {
+          inactive: 'Coupon is inactive',
+          expired: 'Coupon has expired',
+          usage_limit_reached: 'Usage limit reached',
+          minimum_order_not_met: `Minimum order ₹${validation.minimumOrderValue} required`,
+        };
+
+        reasons.push(reasonToMessage[validation.reason] || 'Coupon is invalid');
+      } else {
+        discount = calculateCouponDiscount(c, subtotal);
       }
 
       return {
@@ -206,7 +179,7 @@ exports.getAvailableCoupons = async (req, res) => {
         minOrderValue: c.minOrderValue,
         maxDiscountCap: c.maxDiscountCap,
         expiry: c.expiry,
-        eligible,
+        eligible: validation.valid,
         reasons,
         discount,
       };
